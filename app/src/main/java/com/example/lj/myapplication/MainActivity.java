@@ -16,9 +16,9 @@ import java.util.List;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity {
-    int nextToExpand;
-    int nextToColapse;
 
+    int parentPositionToExpand;
+    int parentPositionToCollapse;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,12 +74,75 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
+        int currentItem = 0;
+        int numberOfItemsBeforeExpand = genres.size();
+        while (currentItem < adapter.getItemCount()) {
+            if (!(adapter.isGroupExpanded(currentItem)) && adapter.isGroup(currentItem)) {
+                adapter.toggleGroup(currentItem);
+                int currentNumberOfItems = adapter.getItemCount();
+                currentItem = currentItem + currentNumberOfItems - numberOfItemsBeforeExpand;
+                numberOfItemsBeforeExpand = currentNumberOfItems;
+            } else {
+                currentItem++;
+            }
+        }
+
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
                 LinearLayoutManager layoutManager = LinearLayoutManager.class.cast(recyclerView.getLayoutManager());
-                int currentFirstVisible = layoutManager.findFirstVisibleItemPosition();
+                int currentNumberOfItems = adapter.getItemCount();
+
+                //if scroll up
+                if (dy > 0) {
+
+                } else {
+
+                    int currentFirstVisible = layoutManager.findFirstVisibleItemPosition();
+
+                    //find which parent to expand
+                    boolean flagToExpand = false;
+                    parentPositionToExpand = currentFirstVisible + 1;
+                    while (parentPositionToExpand <= currentNumberOfItems) {
+                        if (!(adapter.isGroupExpanded(parentPositionToExpand)) && adapter.isGroup(parentPositionToExpand)) {
+                            flagToExpand = true;
+                            break;
+                        }
+                        parentPositionToExpand++;
+                        flagToExpand = false;
+                    }
+
+                    //find parent to collapse and if visible toggle
+                    if (flagToExpand && currentFirstVisible+5 > parentPositionToExpand) {
+                        parentPositionToCollapse = currentFirstVisible - 1;
+                        while (parentPositionToCollapse > -1) {
+                            if (adapter.isGroupExpanded(parentPositionToCollapse) && adapter.isGroup(parentPositionToCollapse)) {
+                                Handler handler = new android.os.Handler();
+                                Runnable runnable = new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        adapter.toggleGroup(parentPositionToCollapse);
+                                        adapter.toggleGroup(parentPositionToExpand);
+                                    }
+                                };
+                                handler.post(runnable);
+                                break;
+                            }
+                            parentPositionToCollapse--;
+                        }
+                    }
+
+                }
+/*
+                int totalItemCount = layoutManager.getItemCount();
+                int lastVisible = layoutManager.findLastVisibleItemPosition();
+                boolean endHasBeenReached = lastVisible + 5 >= totalItemCount;
+                if (totalItemCount > 0 && endHasBeenReached && adapter.isGroup(lastVisible)) {
+                    adapter.toggleGroup(lastVisible);//you have reached to the bottom of your recycler view
+                }*/
+
+/*
 
                 System.out.println("CURRENT VISIBLE = " + currentFirstVisible);
                 System.out.println("NEXT to expand -> " + nextToExpand);
@@ -105,17 +168,12 @@ public class MainActivity extends AppCompatActivity {
                     nextToColapse = adapter.toggleOnScrollUp(currentFirstVisible);
                 }
 
+*/
                 /*
                 if (!(adapter.isGroupExpanded(firstVisible))) {
                     adapter.toggleGroup(firstVisible);
                 }
 
-                int totalItemCount = layoutManager.getItemCount();
-                int lastVisible = layoutManager.findLastVisibleItemPosition();
-                boolean endHasBeenReached = lastVisible + 5 >= totalItemCount;
-                if (totalItemCount > 0 && endHasBeenReached) {
-                    adapter.toggleGroup(); //you have reached to the bottom of your recycler view
-                }
 */
             }
         });
