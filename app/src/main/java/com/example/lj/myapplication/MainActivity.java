@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
                 LinearLayoutManager layoutManager = LinearLayoutManager.class.cast(recyclerView.getLayoutManager());
-                int currentNumberOfItems = adapter.getItemCount();
+                final int currentNumberOfItems = adapter.getItemCount();
 
                 //if scroll up
                 if (dy < 0) {
@@ -115,11 +115,11 @@ public class MainActivity extends AppCompatActivity {
                         flagToExpand = false;
                     }
 
-                    //find parent to collapse and if visible toggle
+                    //check if the item for toggling is visible
                     boolean flagToToggle = false;
                     if (flagToExpand) {
                         int currentLastVisible = layoutManager.findLastVisibleItemPosition();
-                        while (currentFirstVisible != currentLastVisible) {
+                        while (currentLastVisible > currentFirstVisible) {
                             if (adapter.isGroup(parentPositionToExpand) && (!(adapter.isGroupExpanded(parentPositionToExpand)))) {
                                 flagToToggle = true;
                                 break;
@@ -128,19 +128,28 @@ public class MainActivity extends AppCompatActivity {
                             flagToToggle = false;
                         }
 
+                        //expand + collapse
                         if (flagToToggle) {
+                            Handler handler = new android.os.Handler();
+                            Runnable runnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    adapter.toggleGroup(parentPositionToExpand);
+                                }
+                            };
+                            handler.post(runnable);
+
                             parentPositionToCollapse = currentFirstVisible;
                             while (parentPositionToCollapse > -1) {
                                 if (adapter.isGroupExpanded(parentPositionToCollapse) && adapter.isGroup(parentPositionToCollapse)) {
-                                    Handler handler = new android.os.Handler();
-                                    Runnable runnable = new Runnable() {
+                                    Handler handler2 = new android.os.Handler();
+                                    Runnable runnable2 = new Runnable() {
                                         @Override
                                         public void run() {
                                             adapter.toggleGroup(parentPositionToCollapse);
-                                            adapter.toggleGroup(parentPositionToExpand);
                                         }
                                     };
-                                    handler.post(runnable);
+                                    handler2.post(runnable2);
                                     break;
                                 }
                                 parentPositionToCollapse--;
