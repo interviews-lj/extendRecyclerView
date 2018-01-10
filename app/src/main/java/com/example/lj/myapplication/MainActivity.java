@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.widget.Toast;
 
 import com.thoughtbot.expandablerecyclerview.listeners.GroupExpandCollapseListener;
 import com.thoughtbot.expandablerecyclerview.models.ExpandableGroup;
@@ -19,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
 
     int parentPositionToExpand;
     int parentPositionToCollapse;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,17 +97,17 @@ public class MainActivity extends AppCompatActivity {
                 int currentNumberOfItems = adapter.getItemCount();
 
                 //if scroll up
-                if (dy > 0) {
+                if (dy < 0) {
 
-                } else {
-
+                } else if (dy > 0) {
+                    Toast.makeText(MainActivity.this, "DOWN", Toast.LENGTH_SHORT).show();
                     int currentFirstVisible = layoutManager.findFirstVisibleItemPosition();
 
                     //find which parent to expand
                     boolean flagToExpand = false;
                     parentPositionToExpand = currentFirstVisible + 1;
-                    while (parentPositionToExpand <= currentNumberOfItems) {
-                        if (!(adapter.isGroupExpanded(parentPositionToExpand)) && adapter.isGroup(parentPositionToExpand)) {
+                    while (parentPositionToExpand <= currentNumberOfItems - 1) {
+                        if (adapter.isGroup(parentPositionToExpand) && (!(adapter.isGroupExpanded(parentPositionToExpand)))) {
                             flagToExpand = true;
                             break;
                         }
@@ -114,23 +116,37 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     //find parent to collapse and if visible toggle
-                    if (flagToExpand && currentFirstVisible+5 > parentPositionToExpand) {
-                        parentPositionToCollapse = currentFirstVisible - 1;
-                        while (parentPositionToCollapse > -1) {
-                            if (adapter.isGroupExpanded(parentPositionToCollapse) && adapter.isGroup(parentPositionToCollapse)) {
-                                Handler handler = new android.os.Handler();
-                                Runnable runnable = new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        adapter.toggleGroup(parentPositionToCollapse);
-                                        adapter.toggleGroup(parentPositionToExpand);
-                                    }
-                                };
-                                handler.post(runnable);
+                    boolean flagToToggle = false;
+                    if (flagToExpand) {
+                        int currentLastVisible = layoutManager.findLastVisibleItemPosition();
+                        while (currentFirstVisible != currentLastVisible) {
+                            if (adapter.isGroup(parentPositionToExpand) && (!(adapter.isGroupExpanded(parentPositionToExpand)))) {
+                                flagToToggle = true;
                                 break;
                             }
-                            parentPositionToCollapse--;
+                            currentLastVisible--;
+                            flagToToggle = false;
                         }
+
+                        if (flagToToggle) {
+                            parentPositionToCollapse = currentFirstVisible;
+                            while (parentPositionToCollapse > -1) {
+                                if (adapter.isGroupExpanded(parentPositionToCollapse) && adapter.isGroup(parentPositionToCollapse)) {
+                                    Handler handler = new android.os.Handler();
+                                    Runnable runnable = new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            adapter.toggleGroup(parentPositionToCollapse);
+                                            adapter.toggleGroup(parentPositionToExpand);
+                                        }
+                                    };
+                                    handler.post(runnable);
+                                    break;
+                                }
+                                parentPositionToCollapse--;
+                            }
+                        }
+
                     }
 
                 }
